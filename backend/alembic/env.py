@@ -5,13 +5,14 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context  # type: ignore[attr-defined]
-from app.core.config import settings
-from app.db.base import Base
+from app.core.config import settings  # type: ignore[import-not-found]
+from app.db.base import Base  # type: ignore[import-not-found]
 
 config = context.config
-fileConfig(config.config_file_name)
+if config.config_file_name:
+    fileConfig(config.config_file_name)
 
-target_metadata = Base.metadata
+target_metadata = Base.metadata  # type: ignore[attr-defined]
 
 
 async def run_migrations_online():
