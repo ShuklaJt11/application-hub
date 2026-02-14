@@ -25,7 +25,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: backend
-        run: poetry install --no-interaction --no-ansi
+        run: poetry install --no-interaction --no-ansi --no-root
 
       - name: Run formatters (check)
         working-directory: backend
