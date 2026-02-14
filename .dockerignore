@@ -1,0 +1,39 @@
+# Ignore git metadata
+.git
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Environment files (sensitive)
+.env
+backend/.env
+.env.*
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# IDEs/editors
+.vscode/
+.idea/
+
+# Logs and DB
+*.log
+*.sqlite3
+
+# Node
+node_modules/
+
+# Docker
+docker-compose.override.yml
