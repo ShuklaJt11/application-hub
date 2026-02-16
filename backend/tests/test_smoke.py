@@ -7,5 +7,5 @@ client = TestClient(app)
 
 def test_root_smoke():
     resp = client.get("/")
-    # Ensure app responds and not an internal error
-    assert resp.status_code < 500
+    assert resp.status_code == 200
+    assert resp.json() == {"message": "Backend is running"}
