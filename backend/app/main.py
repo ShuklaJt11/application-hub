@@ -1,6 +1,17 @@
+from contextlib import asynccontextmanager  # type: ignore[attr-defined]
+
 from fastapi import FastAPI
 
-app = FastAPI()
+from app.db.session import engine
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    await engine.dispose()
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/")
