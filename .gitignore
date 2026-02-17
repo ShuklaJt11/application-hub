@@ -49,6 +49,7 @@ pip-delete-this-directory.txt
 .pytest_cache/
 htmlcov/
 .hypothesis/
+*_cache/
 
 # Translations
 *.mo
