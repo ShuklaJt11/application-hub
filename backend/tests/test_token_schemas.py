@@ -1,8 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.schemas.token_payload import TokenPayload
-from app.schemas.token_response import TokenResponse
+from app.schemas.auth import TokenPayload, TokenResponse
 
 
 def test_token_response_valid_and_default_refresh_none():

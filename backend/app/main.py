@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager  # type: ignore[attr-defined]
 
 from fastapi import FastAPI
 
+from app.api.router import api_router
 from app.db.session import engine
 
 
@@ -12,6 +13,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(api_router)
 
 
 @app.get("/")

@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.schemas.user_login import UserLogin
+from app.schemas.auth import UserLogin
 
 
 def test_user_login_normalizes_email():

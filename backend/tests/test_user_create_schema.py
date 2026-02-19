@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.schemas.user_create import UserCreate
+from app.schemas.auth import UserCreate
 
 
 def test_user_create_normalizes_email_and_username():

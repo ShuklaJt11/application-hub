@@ -20,6 +20,11 @@ repos:
     hooks:
       - id: mypy
         files: ^backend/
+        additional_dependencies:
+          - redis>=7.1.1,<8.0.0
+          - types-redis>=4.6.0.20241004
+          - sqlalchemy>=2.0.46,<3.0.0
+          - fastapi>=0.129.0,<0.130.0
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
