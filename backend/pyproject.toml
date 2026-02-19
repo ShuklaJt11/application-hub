@@ -32,6 +32,8 @@ httpx = "^0.28.1"
 black = "^24.1.0"
 ruff = "^0.2.0"
 mypy = "^1.6.0"
+types-python-jose = "^3.5.0.20250531"
+types-passlib = "^1.7.7.20260211"
 
 [tool.black]
 extend-exclude = 'alembic[\\/]+versions[\\/].*'
