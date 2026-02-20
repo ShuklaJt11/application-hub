@@ -39,6 +39,18 @@ class TokenResponse(BaseModel):
     token_type: Literal["bearer"]
 
 
+class RefreshTokenRequest(CleanInputModel):
+    refresh_token: str = Field(min_length=1)
+
+
+class LogoutRequest(CleanInputModel):
+    refresh_token: str = Field(min_length=1)
+
+
+class MessageResponse(BaseModel):
+    message: str
+
+
 class TokenPayload(BaseModel):
     sub: str
     type: Literal["access", "refresh"]

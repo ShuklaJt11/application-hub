@@ -7,13 +7,21 @@ from app.core.security import (
     REFRESH_EXPIRE_MINUTES,
     create_access_token,
     create_refresh_token,
+    decode_token,
     hash_password,
     verify_password,
 )
 from app.models.tenant import Tenant
 from app.models.tenant_user import TenantRole, TenantUser
 from app.models.user import User
-from app.schemas.auth import TokenResponse, UserCreate, UserLogin
+from app.schemas.auth import (
+    LogoutRequest,
+    MessageResponse,
+    RefreshTokenRequest,
+    TokenResponse,
+    UserCreate,
+    UserLogin,
+)
 
 
 class AuthService:
@@ -93,6 +101,72 @@ class AuthService:
             refresh_token=refresh_token,
             token_type="bearer",
         )
+
+    async def refresh(self, payload: RefreshTokenRequest) -> TokenResponse:
+        token_payload = decode_token(payload.refresh_token, "refresh")
+        if token_payload is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired refresh token",
+            )
+
+        sub = token_payload.get("sub")
+        token_id = token_payload.get("jti")
+        if not isinstance(sub, str) or not isinstance(token_id, str):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token payload",
+            )
+
+        redis_key = f"{sub}:{token_id}"
+        stored_refresh_token = await self.redis_client.get(redis_key)
+        if stored_refresh_token != payload.refresh_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token revoked or not found",
+            )
+
+        await self.redis_client.delete(redis_key)
+
+        access_token = create_access_token(sub)
+        new_refresh_token, new_token_id = create_refresh_token(sub)
+        await self.redis_client.setex(
+            f"{sub}:{new_token_id}",
+            REFRESH_EXPIRE_MINUTES * 60,
+            new_refresh_token,
+        )
+
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=new_refresh_token,
+            token_type="bearer",
+        )
+
+    async def logout(self, payload: LogoutRequest) -> MessageResponse:
+        token_payload = decode_token(payload.refresh_token, "refresh")
+        if token_payload is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired refresh token",
+            )
+
+        sub = token_payload.get("sub")
+        token_id = token_payload.get("jti")
+        if not isinstance(sub, str) or not isinstance(token_id, str):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token payload",
+            )
+
+        redis_key = f"{sub}:{token_id}"
+        deleted = await self.redis_client.delete(redis_key)
+        if deleted == 0:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token revoked or not found",
+            )
+
+        return MessageResponse(message="Logged out successfully")
 
     async def _get_user_by_email(self, email: str) -> User | None:
         return await self.db.scalar(select(User).where(User.email == email))

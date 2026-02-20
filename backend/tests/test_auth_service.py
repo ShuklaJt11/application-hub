@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from app.schemas.auth import UserCreate, UserLogin
+from app.schemas.auth import LogoutRequest, RefreshTokenRequest, UserCreate, UserLogin
 
 
 class _BeginContext:
@@ -181,3 +181,138 @@ async def test_login_returns_tokens_and_stores_refresh(
         auth_services_module.REFRESH_EXPIRE_MINUTES * 60,
         "refresh-token",
     )
+
+
+@pytest.mark.asyncio
+async def test_refresh_rejects_invalid_refresh_token(auth_services_module, monkeypatch):
+    db = _FakeDB(scalar_result=None)
+    redis_client = AsyncMock()
+    service = auth_services_module.AuthService(db=db, redis_client=redis_client)
+
+    monkeypatch.setattr(auth_services_module, "decode_token", lambda *_: None)
+
+    with pytest.raises(auth_services_module.HTTPException) as exc:
+        await service.refresh(RefreshTokenRequest(refresh_token="bad-token"))
+
+    assert exc.value.status_code == 401
+    redis_client.get.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_refresh_rejects_when_token_not_in_redis(
+    auth_services_module, monkeypatch
+):
+    db = _FakeDB(scalar_result=None)
+    redis_client = AsyncMock()
+    redis_client.get = AsyncMock(return_value=None)
+    service = auth_services_module.AuthService(db=db, redis_client=redis_client)
+
+    user_id = str(uuid.uuid4())
+    monkeypatch.setattr(
+        auth_services_module,
+        "decode_token",
+        lambda *_: {"sub": user_id, "jti": "old-jti"},
+    )
+
+    with pytest.raises(auth_services_module.HTTPException) as exc:
+        await service.refresh(RefreshTokenRequest(refresh_token="refresh-token"))
+
+    assert exc.value.status_code == 401
+    redis_client.get.assert_awaited_once_with(f"{user_id}:old-jti")
+
+
+@pytest.mark.asyncio
+async def test_refresh_rotates_tokens(auth_services_module, monkeypatch):
+    db = _FakeDB(scalar_result=None)
+    redis_client = AsyncMock()
+    redis_client.get = AsyncMock(return_value="old-refresh-token")
+    redis_client.delete = AsyncMock(return_value=1)
+    service = auth_services_module.AuthService(db=db, redis_client=redis_client)
+
+    user_id = str(uuid.uuid4())
+    monkeypatch.setattr(
+        auth_services_module,
+        "decode_token",
+        lambda *_: {"sub": user_id, "jti": "old-jti"},
+    )
+    monkeypatch.setattr(
+        auth_services_module, "create_access_token", lambda *_: "new-access"
+    )
+    monkeypatch.setattr(
+        auth_services_module,
+        "create_refresh_token",
+        lambda *_: ("new-refresh", "new-jti"),
+    )
+
+    response = await service.refresh(
+        RefreshTokenRequest(refresh_token="old-refresh-token")
+    )
+
+    assert response.access_token == "new-access"
+    assert response.refresh_token == "new-refresh"
+    assert response.token_type == "bearer"
+    redis_client.get.assert_awaited_once_with(f"{user_id}:old-jti")
+    redis_client.delete.assert_awaited_once_with(f"{user_id}:old-jti")
+    redis_client.setex.assert_awaited_once_with(
+        f"{user_id}:new-jti",
+        auth_services_module.REFRESH_EXPIRE_MINUTES * 60,
+        "new-refresh",
+    )
+
+
+@pytest.mark.asyncio
+async def test_logout_rejects_invalid_refresh_token(auth_services_module, monkeypatch):
+    db = _FakeDB(scalar_result=None)
+    redis_client = AsyncMock()
+    service = auth_services_module.AuthService(db=db, redis_client=redis_client)
+
+    monkeypatch.setattr(auth_services_module, "decode_token", lambda *_: None)
+
+    with pytest.raises(auth_services_module.HTTPException) as exc:
+        await service.logout(LogoutRequest(refresh_token="bad-token"))
+
+    assert exc.value.status_code == 401
+    redis_client.delete.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_logout_rejects_missing_refresh_token_key(
+    auth_services_module, monkeypatch
+):
+    db = _FakeDB(scalar_result=None)
+    redis_client = AsyncMock()
+    redis_client.delete = AsyncMock(return_value=0)
+    service = auth_services_module.AuthService(db=db, redis_client=redis_client)
+
+    user_id = str(uuid.uuid4())
+    monkeypatch.setattr(
+        auth_services_module,
+        "decode_token",
+        lambda *_: {"sub": user_id, "jti": "old-jti"},
+    )
+
+    with pytest.raises(auth_services_module.HTTPException) as exc:
+        await service.logout(LogoutRequest(refresh_token="refresh-token"))
+
+    assert exc.value.status_code == 401
+    redis_client.delete.assert_awaited_once_with(f"{user_id}:old-jti")
+
+
+@pytest.mark.asyncio
+async def test_logout_deletes_refresh_token_key(auth_services_module, monkeypatch):
+    db = _FakeDB(scalar_result=None)
+    redis_client = AsyncMock()
+    redis_client.delete = AsyncMock(return_value=1)
+    service = auth_services_module.AuthService(db=db, redis_client=redis_client)
+
+    user_id = str(uuid.uuid4())
+    monkeypatch.setattr(
+        auth_services_module,
+        "decode_token",
+        lambda *_: {"sub": user_id, "jti": "old-jti"},
+    )
+
+    response = await service.logout(LogoutRequest(refresh_token="refresh-token"))
+
+    assert response.message == "Logged out successfully"
+    redis_client.delete.assert_awaited_once_with(f"{user_id}:old-jti")
