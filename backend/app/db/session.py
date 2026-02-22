@@ -4,7 +4,7 @@ from collections.abc import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/app_hub"
+    "DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/app_db"
 )
 
 engine = create_async_engine(
