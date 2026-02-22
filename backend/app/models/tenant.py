@@ -9,6 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
+    from app.models.application import Application
     from app.models.tenant_user import TenantUser
 
 
@@ -26,4 +27,8 @@ class Tenant(Base):
     user_links: Mapped[list["TenantUser"]] = relationship(
         back_populates="tenant",
         cascade="all, delete-orphan",
+    )
+
+    applications: Mapped[list["Application"]] = relationship(
+        "Application", back_populates="tenant"
     )
