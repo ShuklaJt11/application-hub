@@ -78,6 +78,32 @@ async def test_get_auth_service_returns_auth_service(deps_module):
 
 
 @pytest.mark.asyncio
+async def test_get_application_repository_returns_repository(deps_module):
+    repository_module = importlib.import_module(
+        "app.repositories.application_repository"
+    )
+    repository_module = importlib.reload(repository_module)
+
+    fake_db = object()
+    repository = await deps_module.get_application_repository(db=fake_db)
+
+    assert isinstance(repository, repository_module.ApplicationRepository)
+    assert repository.session is fake_db
+
+
+@pytest.mark.asyncio
+async def test_get_application_service_returns_application_service(deps_module):
+    service_module = importlib.import_module("app.services.application_service")
+    service_module = importlib.reload(service_module)
+
+    fake_repository = object()
+    service = await deps_module.get_application_service(repository=fake_repository)
+
+    assert isinstance(service, service_module.ApplicationService)
+    assert service.repository is fake_repository
+
+
+@pytest.mark.asyncio
 async def test_get_current_user_raises_without_credentials(deps_module):
     db = AsyncMock()
 
