@@ -8,6 +8,8 @@ def test_api_router_contains_auth_endpoints():
     route_paths = {route.path for route in api_router.routes}
     assert "/api/auth/signup" in route_paths
     assert "/api/auth/login" in route_paths
+    assert "/api/applications" in route_paths
+    assert "/api/applications/{application_id}" in route_paths
 
 
 def test_main_app_exposes_auth_endpoints():
@@ -16,3 +18,5 @@ def test_main_app_exposes_auth_endpoints():
 
     assert "/api/auth/signup" in route_paths
     assert "/api/auth/login" in route_paths
+    assert "/api/applications" in route_paths
+    assert "/api/applications/{application_id}" in route_paths

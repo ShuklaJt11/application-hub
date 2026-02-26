@@ -15,6 +15,8 @@ from app.models.tenant_user import TenantUser
 from app.models.user import User
 
 if TYPE_CHECKING:
+    from app.repositories.application_repository import ApplicationRepository
+    from app.services.application_service import ApplicationService
     from app.services.auth_services import AuthService
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -45,6 +47,22 @@ async def get_auth_service(
     from app.services.auth_services import AuthService
 
     return AuthService(db=db, redis_client=redis_client)
+
+
+async def get_application_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "ApplicationRepository":
+    from app.repositories.application_repository import ApplicationRepository
+
+    return ApplicationRepository(session=db)
+
+
+async def get_application_service(
+    repository: "ApplicationRepository" = Depends(get_application_repository),
+) -> "ApplicationService":
+    from app.services.application_service import ApplicationService
+
+    return ApplicationService(repository=repository)
 
 
 async def get_current_user(
