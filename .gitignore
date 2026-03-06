@@ -106,3 +106,7 @@ docker-compose.override.yml
 # Poetry
 .venv
 #poetry.lock
+
+.devcontainer
+
+devenv
