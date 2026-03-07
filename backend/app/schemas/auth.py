@@ -51,6 +51,11 @@ class MessageResponse(BaseModel):
     message: str
 
 
+class ActiveSessionsResponse(BaseModel):
+    sessions: list[str]
+    count: int
+
+
 class TokenPayload(BaseModel):
     sub: str
     type: Literal["access", "refresh"]

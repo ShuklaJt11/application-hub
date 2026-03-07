@@ -1,9 +1,10 @@
+import uuid
 from unittest.mock import AsyncMock
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.api.deps import get_auth_service
+from app.api.deps import get_auth_service, get_current_user
 from app.api.routes.auth import router as auth_router
 
 
@@ -11,6 +12,9 @@ def _build_test_client(fake_service):
     app = FastAPI()
     app.include_router(auth_router)
     app.dependency_overrides[get_auth_service] = lambda: fake_service
+    app.dependency_overrides[get_current_user] = lambda: type(
+        "UserObj", (), {"id": uuid.uuid4()}
+    )()
     return TestClient(app)
 
 
@@ -102,3 +106,35 @@ def test_logout_route_calls_service_and_returns_message():
     assert response.status_code == 200
     assert response.json() == {"message": "Logged out successfully"}
     fake_service.logout.assert_awaited_once()
+
+
+def test_list_sessions_route_calls_service_and_returns_active_sessions():
+    fake_service = AsyncMock()
+    fake_service.list_active_sessions.return_value = {
+        "sessions": ["jti-a", "jti-b"],
+        "count": 2,
+    }
+    client = _build_test_client(fake_service)
+
+    response = client.get("/auth/sessions")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "sessions": ["jti-a", "jti-b"],
+        "count": 2,
+    }
+    fake_service.list_active_sessions.assert_awaited_once()
+
+
+def test_revoke_session_route_calls_service_and_returns_message():
+    fake_service = AsyncMock()
+    fake_service.revoke_session.return_value = {
+        "message": "Session revoked successfully"
+    }
+    client = _build_test_client(fake_service)
+
+    response = client.delete("/auth/sessions/jti-123")
+
+    assert response.status_code == 200
+    assert response.json() == {"message": "Session revoked successfully"}
+    fake_service.revoke_session.assert_awaited_once()

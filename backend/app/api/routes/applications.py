@@ -8,6 +8,7 @@ from app.models.application import ApplicationStatus
 from app.models.tenant import Tenant
 from app.schemas.application import (
     ApplicationCreate,
+    ApplicationDashboardResponse,
     ApplicationListParams,
     ApplicationResponse,
     ApplicationUpdate,
@@ -31,19 +32,15 @@ async def create_application(
 
 
 @router.get(
-    "/{application_id}",
-    response_model=ApplicationResponse,
+    "/dashboard",
+    response_model=ApplicationDashboardResponse,
     dependencies=[rate_limit(times=60, seconds=60)],
 )
-async def get_application_by_id(
-    application_id: UUID,
+async def dashboard_summary(
     tenant: Tenant = Depends(get_current_tenant),
     service: Any = Depends(get_application_service),
-) -> ApplicationResponse:
-    application = await service.get_application_by_id(tenant.id, application_id)
-    if application is None:
-        raise HTTPException(status_code=404, detail="Application not found")
-    return application
+) -> ApplicationDashboardResponse:
+    return await service.get_dashboard_summary(tenant.id)
 
 
 @router.get(
@@ -72,6 +69,22 @@ async def list_applications(
         sort_order=sort_order,
     )
     return await service.list_applications(tenant.id, params)
+
+
+@router.get(
+    "/{application_id}",
+    response_model=ApplicationResponse,
+    dependencies=[rate_limit(times=60, seconds=60)],
+)
+async def get_application_by_id(
+    application_id: UUID,
+    tenant: Tenant = Depends(get_current_tenant),
+    service: Any = Depends(get_application_service),
+) -> ApplicationResponse:
+    application = await service.get_application_by_id(tenant.id, application_id)
+    if application is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return application
 
 
 @router.patch(

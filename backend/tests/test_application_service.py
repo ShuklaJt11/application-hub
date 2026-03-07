@@ -13,6 +13,20 @@ from app.schemas.application import (
 from app.services.application_service import ApplicationService
 
 
+class _FakeRedis:
+    def __init__(self):
+        self.store: dict[str, str] = {}
+
+    async def get(self, key: str) -> str | None:
+        return self.store.get(key)
+
+    async def setex(self, key: str, _ttl: int, value: str) -> None:
+        self.store[key] = value
+
+    async def delete(self, key: str) -> int:
+        return 1 if self.store.pop(key, None) is not None else 0
+
+
 @pytest.mark.asyncio
 async def test_create_application_adds_tenant_id_and_calls_repository():
     repository = AsyncMock()
@@ -82,3 +96,69 @@ async def test_update_application_uses_dynamic_update_payload():
         application_id,
         {"status": ApplicationStatus.offer, "notes": "Strong fit"},
     )
+
+
+@pytest.mark.asyncio
+async def test_get_dashboard_summary_uses_repository_then_caches_result():
+    repository = AsyncMock()
+    repository.get_dashboard_summary = AsyncMock(
+        return_value={
+            "applied": 2,
+            "screening": 1,
+            "interview": 0,
+            "offer": 1,
+            "rejected": 3,
+            "applied_last_7_days": 4,
+            "applied_last_30_days": 6,
+        }
+    )
+    fake_redis = _FakeRedis()
+    service = ApplicationService(repository=repository, redis_client=fake_redis)
+
+    tenant_id = uuid.uuid4()
+
+    first = await service.get_dashboard_summary(tenant_id)
+    second = await service.get_dashboard_summary(tenant_id)
+
+    assert first.total == 7
+    assert second.total == 7
+    assert second.by_status.rejected == 3
+    assert second.trends.applied_last_7_days == 4
+    assert second.trends.applied_last_30_days == 6
+    repository.get_dashboard_summary.assert_awaited_once_with(tenant_id)
+
+
+@pytest.mark.asyncio
+async def test_create_update_delete_invalidate_dashboard_cache():
+    repository = AsyncMock()
+    repository.create_application = AsyncMock(return_value={"id": uuid.uuid4()})
+    repository.update_application = AsyncMock(return_value={"id": uuid.uuid4()})
+    repository.soft_delete_application = AsyncMock(return_value={"id": uuid.uuid4()})
+    fake_redis = _FakeRedis()
+    service = ApplicationService(repository=repository, redis_client=fake_redis)
+
+    tenant_id = uuid.uuid4()
+    cache_key = f"dashboard:{tenant_id}"
+    fake_redis.store[cache_key] = "cached"
+
+    payload = ApplicationCreate(
+        title="Backend Engineer",
+        company="Contoso",
+        location="Remote",
+        applied_date=date(2026, 2, 24),
+        status="applied",
+    )
+    await service.create_application(tenant_id, payload)
+    assert cache_key not in fake_redis.store
+
+    fake_redis.store[cache_key] = "cached"
+    await service.update_application(
+        tenant_id,
+        uuid.uuid4(),
+        ApplicationUpdate(status="offer"),
+    )
+    assert cache_key not in fake_redis.store
+
+    fake_redis.store[cache_key] = "cached"
+    await service.soft_delete_application(tenant_id, uuid.uuid4())
+    assert cache_key not in fake_redis.store

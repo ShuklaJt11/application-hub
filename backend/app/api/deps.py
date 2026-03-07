@@ -72,10 +72,11 @@ async def get_application_repository(
 
 async def get_application_service(
     repository: "ApplicationRepository" = Depends(get_application_repository),
+    redis_client: redis.Redis = Depends(get_redis),
 ) -> "ApplicationService":
     from app.services.application_service import ApplicationService
 
-    return ApplicationService(repository=repository)
+    return ApplicationService(repository=repository, redis_client=redis_client)
 
 
 async def get_current_user(
