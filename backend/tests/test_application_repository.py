@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import select
@@ -209,3 +209,60 @@ async def test_soft_delete_marks_record_and_hides_from_base_queries(db_session):
 
     assert found_after_delete is None
     assert all(application.id != app_obj.id for application in listed_after_delete)
+
+
+@pytest.mark.asyncio
+async def test_get_dashboard_summary_returns_per_status_counts(db_session):
+    tenant = await _create_tenant(db_session, "DashboardTenant")
+    repo = ApplicationRepository(db_session)
+
+    today = datetime.now(timezone.utc).date()
+
+    await repo.create_application(
+        {
+            "tenant_id": tenant.id,
+            "title": "Role A",
+            "company": "Contoso",
+            "status": ApplicationStatus.applied,
+            "location": "Remote",
+            "applied_date": today,
+        }
+    )
+    await repo.create_application(
+        {
+            "tenant_id": tenant.id,
+            "title": "Role B",
+            "company": "Contoso",
+            "status": ApplicationStatus.applied,
+            "location": "Remote",
+            "applied_date": today - timedelta(days=5),
+        }
+    )
+    await repo.create_application(
+        {
+            "tenant_id": tenant.id,
+            "title": "Role C",
+            "company": "Contoso",
+            "status": ApplicationStatus.offer,
+            "location": "Remote",
+            "applied_date": today - timedelta(days=10),
+        }
+    )
+    await repo.create_application(
+        {
+            "tenant_id": tenant.id,
+            "title": "Role D",
+            "company": "Contoso",
+            "status": ApplicationStatus.rejected,
+            "location": "Remote",
+            "applied_date": today - timedelta(days=40),
+        }
+    )
+
+    summary = await repo.get_dashboard_summary(tenant.id)
+
+    assert summary["applied"] == 2
+    assert summary["offer"] == 1
+    assert summary["screening"] == 0
+    assert summary["applied_last_7_days"] == 2
+    assert summary["applied_last_30_days"] == 3

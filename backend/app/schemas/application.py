@@ -64,3 +64,22 @@ class ApplicationResponse(CleanInputModel):
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None
+
+
+class ApplicationStatusBreakdown(CleanInputModel):
+    applied: int = 0
+    screening: int = 0
+    interview: int = 0
+    offer: int = 0
+    rejected: int = 0
+
+
+class ApplicationTrendSummary(CleanInputModel):
+    applied_last_7_days: int = 0
+    applied_last_30_days: int = 0
+
+
+class ApplicationDashboardResponse(CleanInputModel):
+    total: int
+    by_status: ApplicationStatusBreakdown
+    trends: ApplicationTrendSummary

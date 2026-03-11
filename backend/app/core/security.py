@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta, timezone
+from hashlib import sha256
 from typing import Any
 from uuid import uuid4
 
@@ -29,6 +30,10 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
+
+
+def hash_token(token: str) -> str:
+    return sha256(token.encode("utf-8")).hexdigest()
 
 
 def _create_token(

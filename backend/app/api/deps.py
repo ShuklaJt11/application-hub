@@ -4,8 +4,11 @@ from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING
 
 import redis.asyncio as redis
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Request, Response, status
+from fastapi.params import Depends as DependsMarker
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +23,16 @@ if TYPE_CHECKING:
     from app.services.auth_services import AuthService
 
 bearer_scheme = HTTPBearer(auto_error=False)
+
+
+def rate_limit(times: int, seconds: int) -> DependsMarker:
+    async def _enforce_rate_limit(request: Request, response: Response) -> None:
+        if FastAPILimiter.redis is None:
+            return
+
+        await RateLimiter(times=times, seconds=seconds)(request, response)
+
+    return Depends(_enforce_rate_limit)
 
 
 def _decode_access_token(token: str) -> dict[str, object] | None:
@@ -59,10 +72,11 @@ async def get_application_repository(
 
 async def get_application_service(
     repository: "ApplicationRepository" = Depends(get_application_repository),
+    redis_client: redis.Redis = Depends(get_redis),
 ) -> "ApplicationService":
     from app.services.application_service import ApplicationService
 
-    return ApplicationService(repository=repository)
+    return ApplicationService(repository=repository, redis_client=redis_client)
 
 
 async def get_current_user(

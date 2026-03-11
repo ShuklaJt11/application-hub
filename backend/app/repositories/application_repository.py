@@ -1,7 +1,7 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-from sqlalchemy import asc, desc, select
+from sqlalchemy import asc, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
@@ -91,3 +91,51 @@ class ApplicationRepository:
         await self.session.commit()
         await self.session.refresh(application)
         return application
+
+    async def get_dashboard_summary(self, tenant_id: UUID) -> dict[str, int]:
+        query = (
+            select(Application.status, func.count(Application.id))
+            .where(
+                Application.tenant_id == tenant_id,
+                Application.deleted_at.is_(None),
+            )
+            .group_by(Application.status)
+        )
+
+        result = await self.session.execute(query)
+        summary = {
+            "applied": 0,
+            "screening": 0,
+            "interview": 0,
+            "offer": 0,
+            "rejected": 0,
+        }
+
+        for status, count in result.all():
+            summary[status.value] = int(count)
+
+        today = datetime.now(timezone.utc).date()
+        seven_days_ago = today - timedelta(days=6)
+        thirty_days_ago = today - timedelta(days=29)
+
+        last_7_days = await self.session.scalar(
+            select(func.count(Application.id)).where(
+                Application.tenant_id == tenant_id,
+                Application.deleted_at.is_(None),
+                Application.applied_date >= seven_days_ago,
+                Application.applied_date <= today,
+            )
+        )
+        last_30_days = await self.session.scalar(
+            select(func.count(Application.id)).where(
+                Application.tenant_id == tenant_id,
+                Application.deleted_at.is_(None),
+                Application.applied_date >= thirty_days_ago,
+                Application.applied_date <= today,
+            )
+        )
+
+        summary["applied_last_7_days"] = int(last_7_days or 0)
+        summary["applied_last_30_days"] = int(last_30_days or 0)
+
+        return summary

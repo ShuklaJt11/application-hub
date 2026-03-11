@@ -3,11 +3,12 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.deps import get_application_service, get_current_tenant
+from app.api.deps import get_application_service, get_current_tenant, rate_limit
 from app.models.application import ApplicationStatus
 from app.models.tenant import Tenant
 from app.schemas.application import (
     ApplicationCreate,
+    ApplicationDashboardResponse,
     ApplicationListParams,
     ApplicationResponse,
     ApplicationUpdate,
@@ -17,7 +18,10 @@ router = APIRouter(prefix="/applications", tags=["applications"])
 
 
 @router.post(
-    "", response_model=ApplicationResponse, status_code=status.HTTP_201_CREATED
+    "",
+    response_model=ApplicationResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[rate_limit(times=30, seconds=60)],
 )
 async def create_application(
     payload: ApplicationCreate,
@@ -27,19 +31,23 @@ async def create_application(
     return await service.create_application(tenant.id, payload)
 
 
-@router.get("/{application_id}", response_model=ApplicationResponse)
-async def get_application_by_id(
-    application_id: UUID,
+@router.get(
+    "/dashboard",
+    response_model=ApplicationDashboardResponse,
+    dependencies=[rate_limit(times=60, seconds=60)],
+)
+async def dashboard_summary(
     tenant: Tenant = Depends(get_current_tenant),
     service: Any = Depends(get_application_service),
-) -> ApplicationResponse:
-    application = await service.get_application_by_id(tenant.id, application_id)
-    if application is None:
-        raise HTTPException(status_code=404, detail="Application not found")
-    return application
+) -> ApplicationDashboardResponse:
+    return await service.get_dashboard_summary(tenant.id)
 
 
-@router.get("", response_model=list[ApplicationResponse])
+@router.get(
+    "",
+    response_model=list[ApplicationResponse],
+    dependencies=[rate_limit(times=60, seconds=60)],
+)
 async def list_applications(
     tenant: Tenant = Depends(get_current_tenant),
     service: Any = Depends(get_application_service),
@@ -63,7 +71,27 @@ async def list_applications(
     return await service.list_applications(tenant.id, params)
 
 
-@router.patch("/{application_id}", response_model=ApplicationResponse)
+@router.get(
+    "/{application_id}",
+    response_model=ApplicationResponse,
+    dependencies=[rate_limit(times=60, seconds=60)],
+)
+async def get_application_by_id(
+    application_id: UUID,
+    tenant: Tenant = Depends(get_current_tenant),
+    service: Any = Depends(get_application_service),
+) -> ApplicationResponse:
+    application = await service.get_application_by_id(tenant.id, application_id)
+    if application is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return application
+
+
+@router.patch(
+    "/{application_id}",
+    response_model=ApplicationResponse,
+    dependencies=[rate_limit(times=30, seconds=60)],
+)
 async def update_application(
     application_id: UUID,
     payload: ApplicationUpdate,
@@ -76,7 +104,11 @@ async def update_application(
     return updated
 
 
-@router.delete("/{application_id}", response_model=ApplicationResponse)
+@router.delete(
+    "/{application_id}",
+    response_model=ApplicationResponse,
+    dependencies=[rate_limit(times=20, seconds=60)],
+)
 async def soft_delete_application(
     application_id: UUID,
     tenant: Tenant = Depends(get_current_tenant),
