@@ -57,11 +57,25 @@ class AuthService:
         await self.redis_client.srem(index_key, token_id)
         return int(deleted)
 
-    async def _revoke_all_refresh_tokens(self, user_id: str) -> None:
+    async def _revoke_all_refresh_tokens(
+        self, user_id: str, current_token_id: str | None = None
+    ) -> None:
         index_key = self._refresh_index_key(user_id)
         token_ids = await self.redis_client.smembers(index_key)
         if token_ids:
-            keys = [self._refresh_key(user_id, token_id) for token_id in token_ids]
+            # Keep delete ordering deterministic while prioritizing the current token.
+            ordered_token_ids: list[str] = []
+            if current_token_id and current_token_id in token_ids:
+                ordered_token_ids.append(current_token_id)
+
+            remaining_token_ids = sorted(
+                token_id for token_id in token_ids if token_id != current_token_id
+            )
+            ordered_token_ids.extend(remaining_token_ids)
+
+            keys = [
+                self._refresh_key(user_id, token_id) for token_id in ordered_token_ids
+            ]
             await self.redis_client.delete(*keys)
         await self.redis_client.delete(index_key)
 
@@ -155,14 +169,14 @@ class AuthService:
         if stored_refresh_token_hash is None:
             # A structurally valid token that is missing from Redis
             # is likely replayed/revoked.
-            await self._revoke_all_refresh_tokens(sub)
+            await self._revoke_all_refresh_tokens(sub, current_token_id=token_id)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Refresh token reuse detected. Please log in again.",
             )
 
         if stored_refresh_token_hash != presented_token_hash:
-            await self._revoke_all_refresh_tokens(sub)
+            await self._revoke_all_refresh_tokens(sub, current_token_id=token_id)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Refresh token reuse detected. Please log in again.",
