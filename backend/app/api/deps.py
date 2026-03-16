@@ -19,8 +19,10 @@ from app.models.user import User
 
 if TYPE_CHECKING:
     from app.repositories.application_repository import ApplicationRepository
+    from app.repositories.reminder_repository import ReminderRepository
     from app.services.application_service import ApplicationService
     from app.services.auth_services import AuthService
+    from app.services.reminder_service import ReminderService
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -77,6 +79,22 @@ async def get_application_service(
     from app.services.application_service import ApplicationService
 
     return ApplicationService(repository=repository, redis_client=redis_client)
+
+
+async def get_reminder_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "ReminderRepository":
+    from app.repositories.reminder_repository import ReminderRepository
+
+    return ReminderRepository(session=db)
+
+
+async def get_reminder_service(
+    repository: "ReminderRepository" = Depends(get_reminder_repository),
+) -> "ReminderService":
+    from app.services.reminder_service import ReminderService
+
+    return ReminderService(repository=repository)
 
 
 async def get_current_user(

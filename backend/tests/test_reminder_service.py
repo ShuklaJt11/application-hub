@@ -81,3 +81,25 @@ async def test_process_due_reminders_skips_mark_when_notification_fails():
 
     assert processed == 1
     repository.mark_sent.assert_awaited_once_with(reminder_2.id)
+
+
+@pytest.mark.asyncio
+async def test_run_due_reminders_worker_delegates_to_process_due_reminders():
+    repository = AsyncMock()
+    service = ReminderService(repository=repository)
+    service.process_due_reminders = AsyncMock(return_value=3)
+
+    tenant_id = uuid.uuid4()
+    processed = await service.run_due_reminders_worker(tenant_id)
+
+    assert processed == 3
+    service.process_due_reminders.assert_awaited_once_with(tenant_id)
+
+
+@pytest.mark.asyncio
+async def test_send_notification_without_notifier_does_not_raise():
+    repository = AsyncMock()
+    reminder = _make_reminder()
+    service = ReminderService(repository=repository, notifier=None)
+
+    await service.send_notification(reminder)
