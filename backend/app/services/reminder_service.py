@@ -2,10 +2,13 @@ import logging
 from collections.abc import Awaitable, Callable
 from uuid import UUID
 
+import redis.asyncio as redis
+
 from app.models.reminder import Reminder
 from app.repositories.reminder_repository import ReminderRepository
 
 logger = logging.getLogger(__name__)
+REMINDER_QUEUE_KEY = "reminders:queue"
 
 
 class ReminderService:
@@ -56,3 +59,50 @@ class ReminderService:
 
     async def run_due_reminders_worker(self, tenant_id: UUID) -> int:
         return await self.process_due_reminders(tenant_id)
+
+    async def enqueue_due_reminders(
+        self,
+        redis_client: redis.Redis,
+        batch_size: int = 100,
+    ) -> int:
+        due_reminders = await self.repository.fetch_pending_reminders_global(
+            limit=batch_size
+        )
+        if not due_reminders:
+            return 0
+
+        reminder_ids = [str(reminder.id) for reminder in due_reminders]
+        await redis_client.rpush(REMINDER_QUEUE_KEY, *reminder_ids)
+        return len(reminder_ids)
+
+    async def process_queued_reminders(
+        self,
+        redis_client: redis.Redis,
+        max_items: int = 100,
+    ) -> int:
+        processed_count = 0
+
+        for _ in range(max_items):
+            reminder_id = await redis_client.lpop(REMINDER_QUEUE_KEY)
+            if reminder_id is None:
+                break
+
+            try:
+                reminder_uuid = UUID(reminder_id)
+            except ValueError:
+                continue
+
+            reminder = await self.repository.get_by_id(reminder_uuid)
+            if reminder is None or reminder.sent:
+                continue
+
+            try:
+                await self.send_notification(reminder)
+            except Exception:
+                continue
+
+            marked = await self.mark_reminder_sent(reminder.id)
+            if marked is not None:
+                processed_count += 1
+
+        return processed_count

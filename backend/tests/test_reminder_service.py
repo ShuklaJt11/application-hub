@@ -103,3 +103,75 @@ async def test_send_notification_without_notifier_does_not_raise():
     service = ReminderService(repository=repository, notifier=None)
 
     await service.send_notification(reminder)
+
+
+class _FakeRedisQueue:
+    def __init__(self):
+        self.items: list[str] = []
+
+    async def rpush(self, _key: str, *values: str) -> int:
+        self.items.extend(values)
+        return len(self.items)
+
+    async def lpop(self, _key: str) -> str | None:
+        if not self.items:
+            return None
+        return self.items.pop(0)
+
+
+@pytest.mark.asyncio
+async def test_enqueue_due_reminders_pushes_ids_to_redis_queue():
+    repository = AsyncMock()
+    reminder_1 = _make_reminder()
+    reminder_2 = _make_reminder()
+    repository.fetch_pending_reminders_global = AsyncMock(
+        return_value=[reminder_1, reminder_2]
+    )
+    service = ReminderService(repository=repository)
+    fake_redis = _FakeRedisQueue()
+
+    enqueued = await service.enqueue_due_reminders(fake_redis, batch_size=50)
+
+    assert enqueued == 2
+    repository.fetch_pending_reminders_global.assert_awaited_once_with(limit=50)
+    assert fake_redis.items == [str(reminder_1.id), str(reminder_2.id)]
+
+
+@pytest.mark.asyncio
+async def test_process_queued_reminders_sends_and_marks_sent():
+    repository = AsyncMock()
+    reminder_1 = _make_reminder()
+    reminder_2 = _make_reminder()
+    repository.get_by_id = AsyncMock(side_effect=[reminder_1, reminder_2])
+    repository.mark_sent = AsyncMock(side_effect=[reminder_1, reminder_2])
+    notifier = AsyncMock()
+
+    service = ReminderService(repository=repository, notifier=notifier)
+    fake_redis = _FakeRedisQueue()
+    await fake_redis.rpush("reminders:queue", str(reminder_1.id), str(reminder_2.id))
+
+    processed = await service.process_queued_reminders(fake_redis, max_items=10)
+
+    assert processed == 2
+    assert repository.get_by_id.await_count == 2
+    assert repository.mark_sent.await_count == 2
+    assert notifier.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_process_queued_reminders_skips_invalid_id_and_notification_errors():
+    repository = AsyncMock()
+    reminder = _make_reminder()
+    repository.get_by_id = AsyncMock(return_value=reminder)
+    repository.mark_sent = AsyncMock(return_value=reminder)
+    notifier = AsyncMock(side_effect=[RuntimeError("send failed")])
+
+    service = ReminderService(repository=repository, notifier=notifier)
+    fake_redis = _FakeRedisQueue()
+    await fake_redis.rpush("reminders:queue", "not-a-uuid", str(reminder.id))
+
+    processed = await service.process_queued_reminders(fake_redis, max_items=10)
+
+    assert processed == 0
+    repository.get_by_id.assert_awaited_once()
+    repository.mark_sent.assert_not_awaited()
