@@ -20,7 +20,8 @@ dependencies = [
     "bcrypt (>=4.0.1,<5.0.0)",
     "passlib[bcrypt] (>=1.7.4,<2.0.0)",
     "pydantic-settings (>=2.12.0,<3.0.0)",
-    "email-validator (>=2.3.0,<3.0.0)"
+    "email-validator (>=2.3.0,<3.0.0)",
+    "apscheduler (>=3.10.4,<4.0.0)"
 ]
 
 
@@ -55,6 +56,14 @@ exclude = '(alembic[\\/]+versions[\\/].*|devenv[\\/].*)'
 
 [[tool.mypy.overrides]]
 module = ["fastapi_limiter", "fastapi_limiter.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["apscheduler", "apscheduler.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["apscheduler.schedulers.asyncio"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

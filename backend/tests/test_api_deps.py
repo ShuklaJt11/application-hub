@@ -104,6 +104,30 @@ async def test_get_application_service_returns_application_service(deps_module):
 
 
 @pytest.mark.asyncio
+async def test_get_reminder_repository_returns_repository(deps_module):
+    repository_module = importlib.import_module("app.repositories.reminder_repository")
+    repository_module = importlib.reload(repository_module)
+
+    fake_db = object()
+    repository = await deps_module.get_reminder_repository(db=fake_db)
+
+    assert isinstance(repository, repository_module.ReminderRepository)
+    assert repository.session is fake_db
+
+
+@pytest.mark.asyncio
+async def test_get_reminder_service_returns_reminder_service(deps_module):
+    service_module = importlib.import_module("app.services.reminder_service")
+    service_module = importlib.reload(service_module)
+
+    fake_repository = object()
+    service = await deps_module.get_reminder_service(repository=fake_repository)
+
+    assert isinstance(service, service_module.ReminderService)
+    assert service.repository is fake_repository
+
+
+@pytest.mark.asyncio
 async def test_get_current_user_raises_without_credentials(deps_module):
     db = AsyncMock()
 

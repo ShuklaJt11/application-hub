@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
+    from app.models.reminder import Reminder
     from app.models.tenant import Tenant
 
 
@@ -60,6 +61,11 @@ class Application(Base):
     )
 
     tenant: Mapped["Tenant"] = relationship("Tenant", back_populates="applications")
+    reminders: Mapped[list["Reminder"]] = relationship(
+        "Reminder",
+        back_populates="application",
+        cascade="all, delete-orphan",
+    )
 
     __table_args__ = (
         Index("ix_applications_tenant_status", "tenant_id", "status"),

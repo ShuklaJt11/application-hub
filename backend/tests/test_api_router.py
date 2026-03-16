@@ -10,6 +10,8 @@ def test_api_router_contains_auth_endpoints():
     assert "/api/auth/login" in route_paths
     assert "/api/applications" in route_paths
     assert "/api/applications/{application_id}" in route_paths
+    assert "/api/reminders" in route_paths
+    assert "/api/reminders/process-due" in route_paths
 
 
 def test_main_app_exposes_auth_endpoints():
@@ -20,3 +22,5 @@ def test_main_app_exposes_auth_endpoints():
     assert "/api/auth/login" in route_paths
     assert "/api/applications" in route_paths
     assert "/api/applications/{application_id}" in route_paths
+    assert "/api/reminders" in route_paths
+    assert "/api/reminders/process-due" in route_paths
