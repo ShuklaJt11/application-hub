@@ -49,6 +49,11 @@ class ReminderService:
             try:
                 await self.send_notification(reminder)
             except Exception:
+                logger.exception(
+                    "Failed to send due reminder reminder_id=%s tenant_id=%s",
+                    reminder.id,
+                    reminder.tenant_id,
+                )
                 continue
 
             marked = await self.mark_reminder_sent(reminder.id)
@@ -73,6 +78,7 @@ class ReminderService:
 
         reminder_ids = [str(reminder.id) for reminder in due_reminders]
         await redis_client.rpush(REMINDER_QUEUE_KEY, *reminder_ids)
+        logger.info("Queued %s reminders", len(reminder_ids))
         return len(reminder_ids)
 
     async def process_queued_reminders(
@@ -90,6 +96,9 @@ class ReminderService:
             try:
                 reminder_uuid = UUID(reminder_id)
             except ValueError:
+                logger.warning(
+                    "Skipping invalid reminder id from queue: %s", reminder_id
+                )
                 continue
 
             reminder = await self.repository.get_by_id(reminder_uuid)
@@ -99,10 +108,18 @@ class ReminderService:
             try:
                 await self.send_notification(reminder)
             except Exception:
+                logger.exception(
+                    "Failed to process queued reminder reminder_id=%s tenant_id=%s",
+                    reminder.id,
+                    reminder.tenant_id,
+                )
                 continue
 
             marked = await self.mark_reminder_sent(reminder.id)
             if marked is not None:
                 processed_count += 1
+
+        if processed_count:
+            logger.info("Processed %s queued reminders in worker", processed_count)
 
         return processed_count
