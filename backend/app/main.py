@@ -12,6 +12,7 @@ from fastapi_limiter import FastAPILimiter
 from app.api.router import api_router
 from app.core.logging import setup_logging
 from app.db.session import AsyncSessionLocal, engine
+from app.middleware.error_handler import ErrorHandlerMiddleware
 from app.middleware.request_id import RequestIDMiddleware
 from app.repositories.reminder_repository import ReminderRepository
 from app.services.reminder_service import ReminderService
@@ -102,6 +103,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(ErrorHandlerMiddleware)  # type: ignore[call-arg,arg-type]
 app.add_middleware(RequestIDMiddleware)  # type: ignore[call-arg,arg-type]
 app.include_router(api_router)
 
