@@ -41,8 +41,9 @@ export interface Tenant {
 
 export interface AuthTokens {
   access_token: string;
-  token_type: string;
-  expires_in: number;
+  refresh_token?: string | null;
+  token_type: 'bearer';
+  expires_in?: number;
 }
 
 export interface LoginCredentials {
