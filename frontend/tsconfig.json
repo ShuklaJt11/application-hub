@@ -21,17 +21,15 @@
     "noFallthroughCasesInSwitch": true,
 
     /* Path mapping */
-    "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@components/*": ["src/features/common/components/*"],
-      "@hooks/*": ["src/features/common/hooks/*"],
-      "@utils/*": ["src/features/common/utils/*"],
-      "@types/*": ["src/types/*"],
-      "@features/*": ["src/features/*"],
-      "@api/*": ["src/api/*"],
-      "@styles/*": ["src/styles/*"]
+      "@/*": ["./src/*"],
+      "@components/*": ["./src/features/common/components/*"],
+      "@hooks/*": ["./src/features/common/hooks/*"],
+      "@utils/*": ["./src/features/common/utils/*"],
+      "@types/*": ["./src/types/*"],
+      "@features/*": ["./src/features/*"],
+      "@api/*": ["./src/api/*"],
+      "@styles/*": ["./src/styles/*"]
     }
   },
   "include": ["src"],

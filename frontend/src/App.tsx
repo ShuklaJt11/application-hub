@@ -1,13 +1,11 @@
-import './App.css'
+import './App.css';
 
 function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100">
       <div className="flex flex-col items-center justify-center min-h-screen">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-primary-900 mb-4">
-            Application Hub
-          </h1>
+          <h1 className="text-4xl font-bold text-primary-900 mb-4">Application Hub</h1>
           <p className="text-lg text-primary-700 mb-8">
             Welcome to your application management platform
           </p>
@@ -22,7 +20,7 @@ function App() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
