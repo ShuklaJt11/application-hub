@@ -31,3 +31,19 @@ repos:
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
+
+  - repo: local
+    hooks:
+      - id: frontend-eslint
+        name: ESLint (frontend)
+        language: node
+        entry: bash -c 'npx --prefix frontend eslint --cache --cache-location frontend/node_modules/.cache/eslint/.eslintcache --ext .ts,.tsx --fix "$@"' --
+        files: ^frontend/src/.*\.(ts|tsx)$
+        pass_filenames: true
+
+      - id: frontend-prettier
+        name: Prettier (frontend)
+        language: node
+        entry: bash -c 'npx --prefix frontend prettier --cache --cache-location frontend/node_modules/.cache/prettier/.prettiercache --write "$@"' --
+        files: ^frontend/src/.*\.(ts|tsx|css|json)$
+        pass_filenames: true
