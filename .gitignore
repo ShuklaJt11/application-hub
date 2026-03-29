@@ -110,3 +110,5 @@ docker-compose.override.yml
 .devcontainer
 
 devenv
+
+docs
