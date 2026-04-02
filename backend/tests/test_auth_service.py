@@ -21,14 +21,10 @@ class _FakeDB:
         self.scalar_result = scalar_result
         self.added = []
         self.flush_calls = 0
-        self.begin_calls = 0
+        self.commit_calls = 0
 
     async def scalar(self, _query):
         return self.scalar_result
-
-    def begin(self):
-        self.begin_calls += 1
-        return _BeginContext()
 
     def add(self, obj):
         self.added.append(obj)
@@ -38,6 +34,9 @@ class _FakeDB:
         for obj in self.added:
             if hasattr(obj, "id") and getattr(obj, "id") is None:
                 setattr(obj, "id", uuid.uuid4())
+
+    async def commit(self):
+        self.commit_calls += 1
 
 
 @pytest.fixture
@@ -105,7 +104,7 @@ async def test_signup_creates_user_tenant_and_refresh(
     assert response.access_token == "access-token"
     assert response.refresh_token == "refresh-token"
     assert response.token_type == "bearer"
-    assert db.begin_calls == 1
+    assert db.commit_calls == 1
     assert db.flush_calls == 2
     assert len(db.added) == 3
 

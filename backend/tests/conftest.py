@@ -9,13 +9,21 @@ from app.db.base import Base
 
 
 def _test_database_url() -> str:
-    return os.getenv(
-        "TEST_DATABASE_URL",
-        os.getenv(
-            "DATABASE_URL",
-            "postgresql+asyncpg://postgres:postgres@localhost:5432/app_db",
-        ),
-    )
+    test_database_url = os.getenv("TEST_DATABASE_URL")
+    if not test_database_url:
+        raise RuntimeError(
+            "TEST_DATABASE_URL must be set for tests. Refusing to run against "
+            "the application database."
+        )
+
+    database_url = os.getenv("DATABASE_URL")
+    if database_url and test_database_url == database_url:
+        raise RuntimeError(
+            "TEST_DATABASE_URL must not be the same as DATABASE_URL. "
+            "Tests call drop_all() in teardown."
+        )
+
+    return test_database_url
 
 
 @pytest_asyncio.fixture
