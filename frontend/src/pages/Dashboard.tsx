@@ -5,9 +5,9 @@
 
 const Dashboard = () => {
   return (
-    <div className="bg-gradient-to-br from-primary-50 to-primary-100">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100">
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="px-4 py-12">
         <div className="bg-white rounded-lg shadow-md p-8">
           <h2 className="text-3xl font-bold text-primary-900 mb-4">Welcome to your Dashboard</h2>
           <p className="text-gray-600 mb-6">

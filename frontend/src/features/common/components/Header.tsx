@@ -57,7 +57,7 @@ const Header = () => {
       )}
 
       <header className="relative z-50 bg-white shadow-md">
-        <div ref={mobileMenuContainerRef} className="max-w-7xl mx-auto px-4 py-4">
+        <div ref={mobileMenuContainerRef} className="px-4 py-4">
           <div className="flex justify-between items-center">
             <Link to="/" className="text-2xl font-bold text-primary-900">
               Application Hub
