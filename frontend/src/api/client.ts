@@ -8,7 +8,7 @@ import type { AuthTokens } from '@/types';
 
 import apiConfig from './config';
 import { normalizeApiError } from './error-handler';
-import { clearAuthTokens, getAccessToken, getRefreshToken, setAuthTokens } from './token-storage';
+import { clearAuthSession, getAccessToken, getRefreshToken, setAuthTokens } from './token-storage';
 
 type RetryableRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean;
@@ -39,7 +39,7 @@ const refreshAccessToken = async (refreshToken: string): Promise<string | null> 
     setAuthTokens(tokens);
     return tokens.access_token;
   } catch {
-    clearAuthTokens();
+    clearAuthSession();
     return null;
   }
 };
@@ -89,7 +89,7 @@ apiClient.interceptors.response.use(
 
     const refreshToken = getRefreshToken();
     if (!refreshToken) {
-      clearAuthTokens();
+      clearAuthSession();
       return Promise.reject(normalizeApiError(error));
     }
 

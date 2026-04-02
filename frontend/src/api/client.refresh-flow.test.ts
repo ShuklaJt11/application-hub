@@ -101,7 +101,7 @@ class MockAxiosHeaders {
 }
 
 const tokenStorageMocks = vi.hoisted(() => ({
-  clearAuthTokens: vi.fn(),
+  clearAuthSession: vi.fn(),
   getAccessToken: vi.fn(() => null),
   getRefreshToken: vi.fn(() => 'refresh-token'),
   setAuthTokens: vi.fn(),
@@ -161,7 +161,7 @@ describe('api client refresh flow', () => {
       refresh_token: 'new-refresh-token',
       token_type: 'bearer',
     });
-    expect(tokenStorageMocks.clearAuthTokens).not.toHaveBeenCalled();
+    expect(tokenStorageMocks.clearAuthSession).not.toHaveBeenCalled();
     expect(axiosState.retryRequestMock).toHaveBeenCalledTimes(1);
 
     const retriedConfig = axiosState.retryRequestMock.mock.calls[0][0] as MockRequestConfig;

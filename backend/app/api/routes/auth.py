@@ -6,6 +6,7 @@ from app.api.deps import get_auth_service, get_current_user, rate_limit
 from app.models.user import User
 from app.schemas.auth import (
     ActiveSessionsResponse,
+    CurrentUserResponse,
     LogoutRequest,
     MessageResponse,
     RefreshTokenRequest,
@@ -63,6 +64,25 @@ async def logout(
     payload: LogoutRequest, service: Any = Depends(get_auth_service)
 ) -> MessageResponse:
     return await service.logout(payload)
+
+
+@router.get(
+    "/me",
+    response_model=CurrentUserResponse,
+    status_code=status.HTTP_200_OK,
+    dependencies=[rate_limit(times=30, seconds=60)],
+)
+async def get_me(current_user: User = Depends(get_current_user)) -> CurrentUserResponse:
+    return CurrentUserResponse(
+        id=str(current_user.id),
+        email=current_user.email,
+        username=current_user.username,
+        first_name=current_user.first_name,
+        last_name=current_user.last_name,
+        full_name=f"{current_user.first_name} {current_user.last_name}".strip(),
+        is_active=current_user.is_active,
+        created_at=current_user.created_at,
+    )
 
 
 @router.get(
