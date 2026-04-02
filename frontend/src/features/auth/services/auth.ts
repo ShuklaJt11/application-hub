@@ -3,11 +3,13 @@
  * Handles login, signup, and logout API calls
  */
 
-import { apiClient } from '@/api';
-import type { AuthTokens, LoginCredentials } from '@/types';
+import { apiClient, getRefreshToken } from '@/api';
+import type { AuthTokens, LoginCredentials, User } from '@/types';
 
 export interface SignupCredentials extends LoginCredentials {
-  full_name: string;
+  username: string;
+  first_name: string;
+  last_name: string;
 }
 
 export interface AuthResponse {
@@ -39,11 +41,27 @@ export const authService = {
   },
 
   /**
+   * Fetch the authenticated user profile.
+   */
+  getCurrentUser: async (): Promise<User> => {
+    const response = await apiClient.get<User>('/auth/me');
+    return response.data;
+  },
+
+  /**
    * Logout user (clear tokens)
    */
   logout: async (): Promise<void> => {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) {
+      return;
+    }
+
     try {
-      await apiClient.post('/auth/logout');
+      await apiClient.post('/auth/logout', { refresh_token: refreshToken }, {
+        skipAuthRefresh: true,
+        skipAuthToken: true,
+      } as Record<string, unknown>);
     } catch {
       // Ignore logout errors, tokens will be cleared on client side
     }

@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 from fastapi import FastAPI
@@ -7,14 +8,30 @@ from fastapi.testclient import TestClient
 from app.api.deps import get_auth_service, get_current_user
 from app.api.routes.auth import router as auth_router
 
+TEST_USER_ID = uuid.uuid4()
+
+
+def _build_current_user():
+    return type(
+        "UserObj",
+        (),
+        {
+            "id": TEST_USER_ID,
+            "email": "user@example.com",
+            "username": "user123",
+            "first_name": "Test",
+            "last_name": "User",
+            "is_active": True,
+            "created_at": datetime(2026, 1, 1, tzinfo=UTC),
+        },
+    )()
+
 
 def _build_test_client(fake_service):
     app = FastAPI()
     app.include_router(auth_router)
     app.dependency_overrides[get_auth_service] = lambda: fake_service
-    app.dependency_overrides[get_current_user] = lambda: type(
-        "UserObj", (), {"id": uuid.uuid4()}
-    )()
+    app.dependency_overrides[get_current_user] = _build_current_user
     return TestClient(app)
 
 
@@ -106,6 +123,25 @@ def test_logout_route_calls_service_and_returns_message():
     assert response.status_code == 200
     assert response.json() == {"message": "Logged out successfully"}
     fake_service.logout.assert_awaited_once()
+
+
+def test_me_route_returns_current_user_profile():
+    fake_service = AsyncMock()
+    client = _build_test_client(fake_service)
+
+    response = client.get("/auth/me")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": str(TEST_USER_ID),
+        "email": "user@example.com",
+        "username": "user123",
+        "first_name": "Test",
+        "last_name": "User",
+        "full_name": "Test User",
+        "is_active": True,
+        "created_at": "2026-01-01T00:00:00Z",
+    }
 
 
 def test_list_sessions_route_calls_service_and_returns_active_sessions():

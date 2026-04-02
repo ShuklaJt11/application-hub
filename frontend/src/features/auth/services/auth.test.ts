@@ -8,8 +8,10 @@ const apiState = vi.hoisted(() => ({
 
 vi.mock('@/api', () => ({
   apiClient: {
+    get: apiState.postMock,
     post: apiState.postMock,
   },
+  getRefreshToken: vi.fn(() => 'refresh-token'),
 }));
 
 import { authService } from './auth';
@@ -48,7 +50,9 @@ describe('authService', () => {
 
     await expect(
       authService.signup({
-        full_name: 'User Name',
+        username: 'username',
+        first_name: 'User',
+        last_name: 'Name',
         email: 'user@example.com',
         password: 'Password123',
       })
@@ -57,7 +61,9 @@ describe('authService', () => {
     expect(apiState.postMock).toHaveBeenCalledWith(
       '/auth/signup',
       {
-        full_name: 'User Name',
+        username: 'username',
+        first_name: 'User',
+        last_name: 'Name',
         email: 'user@example.com',
         password: 'Password123',
       },
@@ -65,18 +71,54 @@ describe('authService', () => {
     );
   });
 
+  it('fetches the current authenticated user', async () => {
+    apiState.postMock.mockResolvedValueOnce({
+      data: {
+        id: 'user-1',
+        email: 'user@example.com',
+        username: 'user123',
+        first_name: 'User',
+        last_name: 'Name',
+        full_name: 'User Name',
+        is_active: true,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    });
+
+    await expect(authService.getCurrentUser()).resolves.toEqual({
+      id: 'user-1',
+      email: 'user@example.com',
+      username: 'user123',
+      first_name: 'User',
+      last_name: 'Name',
+      full_name: 'User Name',
+      is_active: true,
+      created_at: '2026-01-01T00:00:00Z',
+    });
+
+    expect(apiState.postMock).toHaveBeenCalledWith('/auth/me');
+  });
+
   it('calls logout endpoint', async () => {
     apiState.postMock.mockResolvedValueOnce({ data: {} });
 
     await expect(authService.logout()).resolves.toBeUndefined();
 
-    expect(apiState.postMock).toHaveBeenCalledWith('/auth/logout');
+    expect(apiState.postMock).toHaveBeenCalledWith(
+      '/auth/logout',
+      { refresh_token: 'refresh-token' },
+      expect.objectContaining({ skipAuthRefresh: true, skipAuthToken: true })
+    );
   });
 
   it('swallows logout endpoint errors', async () => {
     apiState.postMock.mockRejectedValueOnce(new Error('network error'));
 
     await expect(authService.logout()).resolves.toBeUndefined();
-    expect(apiState.postMock).toHaveBeenCalledWith('/auth/logout');
+    expect(apiState.postMock).toHaveBeenCalledWith(
+      '/auth/logout',
+      { refresh_token: 'refresh-token' },
+      expect.objectContaining({ skipAuthRefresh: true, skipAuthToken: true })
+    );
   });
 });

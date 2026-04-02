@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field, SecretStr, field_validator
@@ -37,6 +38,17 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str | None = None
     token_type: Literal["bearer"]
+
+
+class CurrentUserResponse(BaseModel):
+    id: str
+    email: EmailStr
+    username: str
+    first_name: str
+    last_name: str
+    full_name: str
+    is_active: bool
+    created_at: datetime
 
 
 class RefreshTokenRequest(CleanInputModel):

@@ -3,14 +3,14 @@ import { AxiosHeaders, type AxiosError, type InternalAxiosRequestConfig } from '
 
 import { apiClient } from './client';
 import { normalizeApiError } from './error-handler';
-import { clearAuthTokens, getAccessToken, getRefreshToken, setAuthTokens } from './token-storage';
+import { clearAuthSession, getAccessToken, getRefreshToken, setAuthTokens } from './token-storage';
 
 vi.mock('./error-handler', () => ({
   normalizeApiError: vi.fn((error: unknown) => ({ normalized: true, source: error })),
 }));
 
 vi.mock('./token-storage', () => ({
-  clearAuthTokens: vi.fn(),
+  clearAuthSession: vi.fn(),
   getAccessToken: vi.fn(),
   getRefreshToken: vi.fn(),
   setAuthTokens: vi.fn(),
@@ -124,7 +124,7 @@ describe('api client interceptors', () => {
       source: error,
     });
 
-    expect(clearAuthTokens).toHaveBeenCalledTimes(1);
+    expect(clearAuthSession).toHaveBeenCalledTimes(1);
     expect(setAuthTokens).not.toHaveBeenCalled();
   });
 
@@ -138,7 +138,7 @@ describe('api client interceptors', () => {
     });
 
     expect(getRefreshToken).not.toHaveBeenCalled();
-    expect(clearAuthTokens).not.toHaveBeenCalled();
+    expect(clearAuthSession).not.toHaveBeenCalled();
   });
 
   it('does not refresh when retry is already attempted', async () => {

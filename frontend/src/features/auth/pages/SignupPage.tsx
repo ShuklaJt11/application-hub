@@ -33,7 +33,9 @@ const SignupPage = () => {
   const onSubmit = async (data: SignupFormData) => {
     try {
       await signup({
-        full_name: data.full_name,
+        username: data.username,
+        first_name: data.first_name,
+        last_name: data.last_name,
         email: data.email,
         password: data.password,
       });
@@ -65,23 +67,69 @@ const SignupPage = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Full Name Field */}
+            {/* Username Field */}
             <div>
-              <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                Username
               </label>
               <input
-                {...register('full_name')}
+                {...register('username')}
                 type="text"
-                id="full_name"
-                placeholder="John Doe"
+                id="username"
+                placeholder="john_doe"
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                  errors.full_name ? 'border-red-500' : 'border-gray-300'
+                  errors.username ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
-              {errors.full_name && (
-                <p className="mt-1 text-sm text-red-600 font-medium">{errors.full_name.message}</p>
+              {errors.username && (
+                <p className="mt-1 text-sm text-red-600 font-medium">{errors.username.message}</p>
               )}
+            </div>
+
+            {/* Name Fields */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="first_name"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  First Name
+                </label>
+                <input
+                  {...register('first_name')}
+                  type="text"
+                  id="first_name"
+                  placeholder="John"
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                    errors.first_name ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.first_name && (
+                  <p className="mt-1 text-sm text-red-600 font-medium">
+                    {errors.first_name.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Last Name
+                </label>
+                <input
+                  {...register('last_name')}
+                  type="text"
+                  id="last_name"
+                  placeholder="Doe"
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                    errors.last_name ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.last_name && (
+                  <p className="mt-1 text-sm text-red-600 font-medium">
+                    {errors.last_name.message}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Email Field */}

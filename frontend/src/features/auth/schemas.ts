@@ -10,18 +10,29 @@ export const loginSchema = z.object({
   password: z
     .string()
     .min(1, 'Password is required')
-    .min(6, 'Password must be at least 6 characters'),
+    .min(8, 'Password must be at least 8 characters'),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 
 export const signupSchema = z
   .object({
-    full_name: z
+    username: z
       .string()
-      .min(1, 'Full name is required')
-      .min(2, 'Full name must be at least 2 characters')
-      .max(100, 'Full name must be less than 100 characters'),
+      .min(3, 'Username must be at least 3 characters')
+      .max(50, 'Username must be less than 50 characters')
+      .regex(
+        /^[a-z0-9_]+$/,
+        'Username can only contain lowercase letters, numbers, and underscores'
+      ),
+    first_name: z
+      .string()
+      .min(1, 'First name is required')
+      .max(100, 'First name must be less than 100 characters'),
+    last_name: z
+      .string()
+      .min(1, 'Last name is required')
+      .max(100, 'Last name must be less than 100 characters'),
     email: z.string().min(1, 'Email is required').email('Invalid email format'),
     password: z
       .string()

@@ -39,7 +39,9 @@ describe('SignupPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByLabelText('Full Name')).toBeTruthy();
+    expect(screen.getByLabelText('Username')).toBeTruthy();
+    expect(screen.getByLabelText('First Name')).toBeTruthy();
+    expect(screen.getByLabelText('Last Name')).toBeTruthy();
     expect(screen.getByLabelText('Email Address')).toBeTruthy();
     expect(screen.getByLabelText('Password')).toBeTruthy();
     expect(screen.getByLabelText('Confirm Password')).toBeTruthy();
@@ -54,7 +56,9 @@ describe('SignupPage', () => {
       </MemoryRouter>
     );
 
-    await user.type(screen.getByLabelText('Full Name'), 'User Name');
+    await user.type(screen.getByLabelText('Username'), 'username');
+    await user.type(screen.getByLabelText('First Name'), 'User');
+    await user.type(screen.getByLabelText('Last Name'), 'Name');
     await user.type(screen.getByLabelText('Email Address'), 'user@example.com');
     await user.type(screen.getByLabelText('Password'), 'Password123');
     await user.type(screen.getByLabelText('Confirm Password'), 'Password456');
@@ -79,7 +83,9 @@ describe('SignupPage', () => {
       </MemoryRouter>
     );
 
-    await user.type(screen.getByLabelText('Full Name'), 'User Name');
+    await user.type(screen.getByLabelText('Username'), 'username');
+    await user.type(screen.getByLabelText('First Name'), 'User');
+    await user.type(screen.getByLabelText('Last Name'), 'Name');
     await user.type(screen.getByLabelText('Email Address'), 'user@example.com');
     await user.type(screen.getByLabelText('Password'), 'Password123');
     await user.type(screen.getByLabelText('Confirm Password'), 'Password123');
@@ -87,7 +93,9 @@ describe('SignupPage', () => {
 
     await waitFor(() => {
       expect(signupMock).toHaveBeenCalledWith({
-        full_name: 'User Name',
+        username: 'username',
+        first_name: 'User',
+        last_name: 'Name',
         email: 'user@example.com',
         password: 'Password123',
       });

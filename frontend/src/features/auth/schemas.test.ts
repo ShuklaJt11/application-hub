@@ -24,7 +24,9 @@ describe('auth schemas', () => {
 
   it('accepts valid signup data', () => {
     const result = signupSchema.safeParse({
-      full_name: 'Jane Doe',
+      username: 'janedoe',
+      first_name: 'Jane',
+      last_name: 'Doe',
       email: 'jane@example.com',
       password: 'Password123',
       confirmPassword: 'Password123',
@@ -35,7 +37,9 @@ describe('auth schemas', () => {
 
   it('rejects weak signup passwords', () => {
     const result = signupSchema.safeParse({
-      full_name: 'Jane Doe',
+      username: 'janedoe',
+      first_name: 'Jane',
+      last_name: 'Doe',
       email: 'jane@example.com',
       password: 'password',
       confirmPassword: 'password',
@@ -49,7 +53,9 @@ describe('auth schemas', () => {
 
   it('rejects mismatched signup passwords', () => {
     const result = signupSchema.safeParse({
-      full_name: 'Jane Doe',
+      username: 'janedoe',
+      first_name: 'Jane',
+      last_name: 'Doe',
       email: 'jane@example.com',
       password: 'Password123',
       confirmPassword: 'Password456',
@@ -57,5 +63,21 @@ describe('auth schemas', () => {
 
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.message).toBe('Passwords do not match');
+  });
+
+  it('rejects invalid usernames', () => {
+    const result = signupSchema.safeParse({
+      username: 'Jane Doe',
+      first_name: 'Jane',
+      last_name: 'Doe',
+      email: 'jane@example.com',
+      password: 'Password123',
+      confirmPassword: 'Password123',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toBe(
+      'Username can only contain lowercase letters, numbers, and underscores'
+    );
   });
 });
