@@ -112,3 +112,4 @@ docker-compose.override.yml
 devenv
 
 docs
+coverage

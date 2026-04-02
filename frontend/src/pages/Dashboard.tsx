@@ -3,34 +3,9 @@
  * Main page for authenticated users
  */
 
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../features/auth';
-
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const { logout, isLoading } = useAuth();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100">
-      {/* Navigation Header */}
-      <nav className="bg-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary-900">Application Hub</h1>
-          <button
-            onClick={handleLogout}
-            disabled={isLoading}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Logging out...' : 'Logout'}
-          </button>
-        </div>
-      </nav>
-
+    <div className="bg-gradient-to-br from-primary-50 to-primary-100">
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="bg-white rounded-lg shadow-md p-8">
