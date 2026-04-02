@@ -1,12 +1,14 @@
 import logging
 import os
 from contextlib import asynccontextmanager  # type: ignore[attr-defined]
+from typing import Any, cast
 
 import redis.asyncio as redis
 from apscheduler.schedulers.asyncio import (
     AsyncIOScheduler,  # type: ignore[import-untyped]
 )
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi_limiter import FastAPILimiter
 
 from app.api.router import api_router
@@ -19,6 +21,24 @@ from app.services.reminder_service import ReminderService
 
 setup_logging()
 logger = logging.getLogger(__name__)
+
+
+def _cors_allow_origins() -> list[str]:
+    configured_origins = os.getenv(
+        "CORS_ALLOW_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000",
+    )
+    return [
+        origin.strip() for origin in configured_origins.split(",") if origin.strip()
+    ]
+
+
+def _cors_allow_origin_regex() -> str | None:
+    configured_regex = os.getenv(
+        "CORS_ALLOW_ORIGIN_REGEX",
+        r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+    ).strip()
+    return configured_regex or None
 
 
 @asynccontextmanager
@@ -105,6 +125,14 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(ErrorHandlerMiddleware)  # type: ignore[call-arg,arg-type]
 app.add_middleware(RequestIDMiddleware)  # type: ignore[call-arg,arg-type]
+app.add_middleware(
+    cast(Any, CORSMiddleware),
+    allow_origins=_cors_allow_origins(),
+    allow_origin_regex=_cors_allow_origin_regex(),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(api_router)
 
 

@@ -89,27 +89,27 @@ class AuthService:
 
         hashed = hash_password(payload.password.get_secret_value())
 
-        async with self.db.begin():
-            user = User(
-                email=payload.email,
-                username=payload.username,
-                first_name=payload.first_name,
-                last_name=payload.last_name,
-                hashed_password=hashed,
-            )
-            self.db.add(user)
-            await self.db.flush()
+        user = User(
+            email=payload.email,
+            username=payload.username,
+            first_name=payload.first_name,
+            last_name=payload.last_name,
+            hashed_password=hashed,
+        )
+        self.db.add(user)
+        await self.db.flush()
 
-            tenant = Tenant(name=f"{payload.username}'s Workspace")
-            self.db.add(tenant)
-            await self.db.flush()
+        tenant = Tenant(name=f"{payload.username}'s Workspace")
+        self.db.add(tenant)
+        await self.db.flush()
 
-            self.db.add(
-                TenantUser(user_id=user.id, tenant_id=tenant.id, role=TenantRole.admin)
-            )
+        self.db.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=TenantRole.admin)
+        )
+        await self.db.commit()
 
-            access_token = create_access_token(str(user.id))
-            refresh_token, token_id = create_refresh_token(str(user.id))
+        access_token = create_access_token(str(user.id))
+        refresh_token, token_id = create_refresh_token(str(user.id))
 
         await self._store_refresh_token(str(user.id), token_id, refresh_token)
 

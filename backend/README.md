@@ -58,11 +58,16 @@ Optional (with defaults):
 
 - `DATABASE_URL` (default: `postgresql+asyncpg://postgres:postgres@localhost:5432/app_db`)
 - `REDIS_URL` (default: `redis://localhost:6379/0`)
+- `CORS_ALLOW_ORIGINS` (default: `http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000`)
+- `CORS_ALLOW_ORIGIN_REGEX` (default: `^https?://(localhost|127\\.0\\.0\\.1)(:\\d+)?$`)
 - `JWT_ACCESS_EXPIRE_MINUTES` (default: `15`)
 - `JWT_REFRESH_EXPIRE_MINUTES` (default: `1440`)
 - `REMINDER_CHECK_INTERVAL_SECONDS` (default: `60`)
 - `DASHBOARD_CACHE_TTL_SECONDS` (default: `60`)
-- `TEST_DATABASE_URL` (defaults to `DATABASE_URL` when not set)
+- `TEST_DATABASE_URL` (required for tests; must be different from `DATABASE_URL`)
+
+`CORS_ALLOW_ORIGINS` accepts a comma-separated list of frontend origins. Set it explicitly in non-local environments.
+`CORS_ALLOW_ORIGIN_REGEX` allows pattern-based origin matching (used by default for localhost dev ports).
 
 For local Docker Compose usage, you will also need:
 
@@ -125,6 +130,13 @@ From `backend/`:
 ```bash
 pytest
 ```
+
+Set `TEST_DATABASE_URL` to a dedicated test database before running tests. The
+test fixture creates and drops tables and will refuse to run if
+`TEST_DATABASE_URL` is missing or matches `DATABASE_URL`.
+
+With Docker Compose defaults, `TEST_DATABASE_URL` points to the `db_test`
+service (`postgres_test` container, port `5433` on host).
 
 ## API Overview
 
