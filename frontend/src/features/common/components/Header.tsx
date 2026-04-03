@@ -1,153 +1,116 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, type MouseEvent as ReactMouseEvent } from 'react';
+import AppBar from '@mui/material/AppBar';
+import Avatar from '@mui/material/Avatar';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import IconButton from '@mui/material/IconButton';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
 
 const Header = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading, logout } = useAuth();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const mobileMenuContainerRef = useRef<HTMLDivElement | null>(null);
+  const [menuAnchorElement, setMenuAnchorElement] = useState<HTMLElement | null>(null);
+  const isUserMenuOpen = Boolean(menuAnchorElement);
 
-  useEffect(() => {
-    if (!isMobileMenuOpen) {
-      return;
-    }
+  const handleOpenUserMenu = (event: ReactMouseEvent<HTMLElement>) => {
+    setMenuAnchorElement(event.currentTarget);
+  };
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsMobileMenuOpen(false);
-      }
-    };
-
-    const handleDocumentMouseDown = (event: MouseEvent) => {
-      const target = event.target as Node | null;
-
-      if (
-        target &&
-        mobileMenuContainerRef.current &&
-        !mobileMenuContainerRef.current.contains(target)
-      ) {
-        setIsMobileMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('mousedown', handleDocumentMouseDown);
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('mousedown', handleDocumentMouseDown);
-    };
-  }, [isMobileMenuOpen]);
+  const handleCloseUserMenu = () => {
+    setMenuAnchorElement(null);
+  };
 
   const handleLogout = async () => {
-    setIsMobileMenuOpen(false);
+    handleCloseUserMenu();
     await logout();
     navigate('/login');
   };
 
   return (
-    <>
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-white/20 backdrop-blur-sm"
-          onClick={() => setIsMobileMenuOpen(false)}
-          aria-hidden="true"
-        />
-      )}
+    <AppBar
+      position="sticky"
+      elevation={1}
+      sx={{
+        backgroundColor: 'rgba(255, 255, 255, 0.92)',
+        backdropFilter: 'blur(6px)',
+        color: 'text.primary',
+      }}
+    >
+      <Toolbar sx={{ px: { xs: 2, sm: 3 } }}>
+        <Typography
+          component={RouterLink}
+          to={isAuthenticated ? '/dashboard' : '/'}
+          variant="h6"
+          sx={{
+            textDecoration: 'none',
+            fontWeight: 700,
+            flexGrow: 1,
+          }}
+          className="text-primary-900"
+        >
+          Application Hub
+        </Typography>
 
-      <header className="relative z-50 bg-white shadow-md">
-        <div ref={mobileMenuContainerRef} className="px-4 py-4">
-          <div className="flex justify-between items-center">
-            <Link to="/" className="text-2xl font-bold text-primary-900">
-              Application Hub
-            </Link>
-
-            <div className="hidden md:flex items-center gap-4">
-              {isAuthenticated ? (
-                <>
-                  <a
-                    href="#profile"
-                    className="px-4 py-2 text-primary-700 rounded-lg hover:bg-primary-50 transition-colors"
-                  >
-                    Profile
-                  </a>
-                  <button
-                    onClick={handleLogout}
-                    disabled={isLoading}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? 'Logging out...' : 'Logout'}
-                  </button>
-                </>
-              ) : (
-                <Link
-                  to="/login"
-                  className="px-4 py-2 text-primary-700 rounded-lg hover:bg-primary-50 transition-colors"
-                >
-                  Login
-                </Link>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-              className="md:hidden inline-flex items-center justify-center rounded-lg p-2 text-primary-900 hover:bg-primary-50"
-              aria-label="Toggle menu"
-              aria-expanded={isMobileMenuOpen}
-              aria-controls="mobile-header-menu"
+        {isAuthenticated ? (
+          <>
+            <IconButton
+              aria-label="Open user menu"
+              aria-controls={isUserMenuOpen ? 'header-user-menu' : undefined}
+              aria-expanded={isUserMenuOpen ? 'true' : undefined}
+              aria-haspopup="true"
+              onClick={handleOpenUserMenu}
             >
-              <svg
-                className="h-6 w-6"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          </div>
+              <Avatar sx={{ width: 34, height: 34, backgroundColor: 'white' }}>
+                <AccountCircleOutlinedIcon
+                  fontSize="medium"
+                  sx={{ color: 'rgb(12 61 102)', backgroundColor: 'white' }}
+                />
+              </Avatar>
+            </IconButton>
 
-          {isMobileMenuOpen && (
-            <div
-              id="mobile-header-menu"
-              className="md:hidden absolute right-4 top-[calc(100%+0.5rem)] w-56 rounded-lg border border-primary-100 bg-white p-3 shadow-lg"
+            <Menu
+              id="header-user-menu"
+              anchorEl={menuAnchorElement}
+              open={isUserMenuOpen}
+              onClose={handleCloseUserMenu}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              keepMounted
             >
-              <div className="flex flex-col gap-3">
-                {isAuthenticated ? (
-                  <>
-                    <a
-                      href="#profile"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="px-4 py-2 text-primary-700 rounded-lg hover:bg-primary-50 transition-colors"
-                    >
-                      Profile
-                    </a>
-                    <button
-                      onClick={handleLogout}
-                      disabled={isLoading}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-left"
-                    >
-                      {isLoading ? 'Logging out...' : 'Logout'}
-                    </button>
-                  </>
+              <MenuItem component="a" href="#profile" onClick={handleCloseUserMenu}>
+                Profile
+              </MenuItem>
+              <MenuItem onClick={() => void handleLogout()} disabled={isLoading}>
+                {isLoading ? (
+                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                    <CircularProgress size={16} />
+                    Logging out...
+                  </Box>
                 ) : (
-                  <Link
-                    to="/login"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="px-4 py-2 text-primary-700 rounded-lg hover:bg-primary-50 transition-colors"
-                  >
-                    Login
-                  </Link>
+                  'Logout'
                 )}
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
-    </>
+              </MenuItem>
+            </Menu>
+          </>
+        ) : (
+          <Button
+            component={RouterLink}
+            to="/login"
+            sx={{ color: 'rgb(12 61 102);', fontWeight: 600 }}
+            variant="text"
+          >
+            Login
+          </Button>
+        )}
+      </Toolbar>
+    </AppBar>
   );
 };
 

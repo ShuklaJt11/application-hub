@@ -83,19 +83,19 @@ const navigationItems = [
   {
     href: '/dashboard',
     label: 'Dashboard',
-    icon: <DashboardOutlinedIcon />,
+    icon: <DashboardOutlinedIcon sx={{ color: 'rgb(12 61 102)' }} />,
     isRoute: true,
   },
   {
     href: '#applications',
     label: 'Applications',
-    icon: <WorkOutlineOutlinedIcon />,
+    icon: <WorkOutlineOutlinedIcon sx={{ color: 'rgb(12 61 102)' }} />,
     isRoute: false,
   },
   {
     href: '#reminders',
     label: 'Reminders',
-    icon: <NotificationsNoneOutlinedIcon />,
+    icon: <NotificationsNoneOutlinedIcon sx={{ color: 'rgb(12 61 102)' }} />,
     isRoute: false,
   },
 ] as const;
@@ -158,12 +158,12 @@ const Sidebar = () => {
             >
               {isOpen ? (
                 theme.direction === 'rtl' ? (
-                  <ChevronRightIcon />
+                  <ChevronRightIcon sx={{ color: 'rgb(12 61 102)' }} />
                 ) : (
-                  <ChevronLeftIcon />
+                  <ChevronLeftIcon sx={{ color: 'rgb(12 61 102)' }} />
                 )
               ) : (
-                <MenuOutlinedIcon />
+                <MenuOutlinedIcon sx={{ color: 'rgb(12 61 102)' }} />
               )}
             </IconButton>
           </DrawerHeader>

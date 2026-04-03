@@ -46,56 +46,72 @@ describe('Header', () => {
     expect(screen.getByRole('link', { name: 'Login' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Logout' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Profile' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Open user menu' })).toBeNull();
   });
 
-  it('opens mobile menu and closes with Escape', async () => {
+  it('opens user menu and closes with Escape', async () => {
     const user = userEvent.setup();
+    useAuthMock.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      logout: logoutMock,
+    });
 
     renderHeader();
 
-    await user.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    await user.click(screen.getByRole('button', { name: 'Open user menu' }));
+    expect(screen.getByRole('menu')).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: 'Profile' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: 'Logout' })).toBeTruthy();
 
-    expect(screen.getAllByRole('link', { name: 'Login' }).length).toBeGreaterThan(0);
-    const backdrop = document.querySelector('div[aria-hidden="true"]');
-    expect(backdrop).toBeTruthy();
-    expect(backdrop?.className).toContain('backdrop-blur-sm');
-
-    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
 
     await waitFor(() => {
-      expect(document.querySelector('#mobile-header-menu')).toBeNull();
+      expect(
+        screen.getByRole('button', { name: 'Open user menu' }).getAttribute('aria-expanded')
+      ).toBeNull();
     });
   });
 
-  it('closes mobile menu on outside click', async () => {
+  it('closes user menu on outside click', async () => {
     const user = userEvent.setup();
-
-    renderHeader();
-
-    await user.click(screen.getByRole('button', { name: 'Toggle menu' }));
-    expect(document.querySelector('#mobile-header-menu')).toBeTruthy();
-
-    fireEvent.mouseDown(document.body);
-
-    await waitFor(() => {
-      expect(document.querySelector('#mobile-header-menu')).toBeNull();
+    useAuthMock.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      logout: logoutMock,
     });
-  });
-
-  it('closes mobile menu when backdrop is clicked', async () => {
-    const user = userEvent.setup();
 
     renderHeader();
 
-    await user.click(screen.getByRole('button', { name: 'Toggle menu' }));
-    expect(document.querySelector('#mobile-header-menu')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Open user menu' }));
+    expect(screen.getByRole('menu')).toBeTruthy();
 
-    const backdrop = document.querySelector('div[aria-hidden="true"]');
+    const backdrop = document.querySelector('.MuiBackdrop-root');
     expect(backdrop).toBeTruthy();
     fireEvent.click(backdrop as HTMLElement);
 
     await waitFor(() => {
-      expect(document.querySelector('#mobile-header-menu')).toBeNull();
+      expect(
+        screen.getByRole('button', { name: 'Open user menu' }).getAttribute('aria-expanded')
+      ).toBeNull();
+    });
+  });
+
+  it('closes user menu when profile is selected', async () => {
+    const user = userEvent.setup();
+    useAuthMock.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      logout: logoutMock,
+    });
+
+    renderHeader();
+
+    await user.click(screen.getByRole('button', { name: 'Open user menu' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Profile' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('menuitem', { name: 'Profile' })).toBeNull();
     });
   });
 
@@ -109,7 +125,8 @@ describe('Header', () => {
 
     renderHeader();
 
-    await user.click(screen.getByRole('button', { name: 'Logout' }));
+    await user.click(screen.getByRole('button', { name: 'Open user menu' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Logout' }));
 
     await waitFor(() => {
       expect(logoutMock).toHaveBeenCalledTimes(1);
@@ -117,7 +134,8 @@ describe('Header', () => {
     expect(navigateMock).toHaveBeenCalledWith('/login');
   });
 
-  it('shows loading-state logout label when auth is loading', () => {
+  it('shows loading-state logout label when auth is loading', async () => {
+    const user = userEvent.setup();
     useAuthMock.mockReturnValue({
       isAuthenticated: true,
       isLoading: true,
@@ -126,28 +144,11 @@ describe('Header', () => {
 
     renderHeader();
 
-    expect(screen.getByRole('button', { name: 'Logging out...' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Logging out...' })).toHaveProperty('disabled', true);
-  });
+    await user.click(screen.getByRole('button', { name: 'Open user menu' }));
 
-  it('closes mobile menu when authenticated profile link is clicked', async () => {
-    const user = userEvent.setup();
-    useAuthMock.mockReturnValue({
-      isAuthenticated: true,
-      isLoading: false,
-      logout: logoutMock,
-    });
-
-    renderHeader();
-
-    await user.click(screen.getByRole('button', { name: 'Toggle menu' }));
-    expect(document.querySelector('#mobile-header-menu')).toBeTruthy();
-
-    const profileLinks = screen.getAllByRole('link', { name: 'Profile' });
-    await user.click(profileLinks[1]);
-
-    await waitFor(() => {
-      expect(document.querySelector('#mobile-header-menu')).toBeNull();
-    });
+    expect(screen.getByText('Logging out...')).toBeTruthy();
+    expect(
+      screen.getByRole('menuitem', { name: 'Logging out...' }).getAttribute('aria-disabled')
+    ).toBe('true');
   });
 });
