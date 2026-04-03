@@ -11,9 +11,9 @@ vi.mock('@/features/auth', () => ({
 
 import Sidebar from './Sidebar';
 
-const renderSidebar = () =>
+const renderSidebar = (initialEntries = ['/']) =>
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <Sidebar />
     </MemoryRouter>
   );
@@ -44,6 +44,20 @@ describe('Sidebar', () => {
       '#applications'
     );
     expect(screen.getByRole('link', { name: 'Reminders' }).getAttribute('href')).toBe('#reminders');
+  });
+
+  it('shows active-page indicator for the current route', () => {
+    useAuthMock.mockReturnValue({ isAuthenticated: true });
+
+    renderSidebar(['/dashboard']);
+
+    expect(screen.getByRole('link', { name: 'Dashboard' }).getAttribute('aria-current')).toBe(
+      'page'
+    );
+    expect(
+      screen.getByRole('link', { name: 'Applications' }).getAttribute('aria-current')
+    ).toBeNull();
+    expect(screen.getByRole('link', { name: 'Reminders' }).getAttribute('aria-current')).toBeNull();
   });
 
   it('opens and collapses the sidebar from the drawer toggle', async () => {

@@ -16,7 +16,7 @@ import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
 import WorkOutlineOutlinedIcon from '@mui/icons-material/WorkOutlineOutlined';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth';
 
 const drawerWidth = 240;
@@ -103,6 +103,7 @@ const navigationItems = [
 const Sidebar = () => {
   const { isAuthenticated } = useAuth();
   const theme = useTheme();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -133,6 +134,14 @@ const Sidebar = () => {
 
   const collapseDrawer = () => {
     setIsOpen(false);
+  };
+
+  const isNavigationItemActive = (href: string, isRoute: boolean) => {
+    if (isRoute) {
+      return location.pathname === href;
+    }
+
+    return Boolean(location.hash) && location.hash === href;
   };
 
   return (
@@ -173,16 +182,27 @@ const Sidebar = () => {
               const buttonProps = item.isRoute
                 ? { component: RouterLink, to: item.href }
                 : { component: 'a' as const, href: item.href };
+              const isActive = isNavigationItemActive(item.href, item.isRoute);
 
               return (
                 <ListItem key={item.label} disablePadding sx={{ display: 'block' }}>
                   <ListItemButton
                     {...buttonProps}
+                    selected={isActive}
+                    aria-current={isActive ? 'page' : undefined}
                     onClick={collapseDrawer}
                     sx={{
                       minHeight: 48,
                       justifyContent: isOpen ? 'initial' : 'center',
                       px: 2.5,
+                      borderLeft: '3px solid transparent',
+                      '&.Mui-selected': {
+                        borderLeftColor: 'primary.main',
+                        backgroundColor: 'rgba(12, 61, 102, 0.08)',
+                      },
+                      '&.Mui-selected:hover': {
+                        backgroundColor: 'rgba(12, 61, 102, 0.16)',
+                      },
                     }}
                   >
                     <ListItemIcon
